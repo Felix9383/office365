@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置 - Office 365 订阅监控</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <span style="font-size: 1.5rem;">⚙️</span> Office 365 订阅监控 - 设置
+            </span>
+            <div class="d-flex">
+                <a href="/" class="btn btn-outline-light btn-sm me-2">
+                    <span>🏠</span> 仪表板
+                </a>
+                <a href="/settings" class="btn btn-light btn-sm me-2">
+                    <span>⚙️</span> 设置
+                </a>
+                <a href="/logout" class="btn btn-outline-light btn-sm">
+                    <span>🚪</span> 登出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Webhook 通知配置 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">🔔 Webhook 通知配置</h5>
+            </div>
+            <div class="card-body">
+                <form id="webhookForm">
+                    <div class="mb-3">
+                        <label for="webhookUrl" class="form-label">Webhook 地址</label>
+                        <input type="url" class="form-control" id="webhookUrl" 
+                               placeholder="https://your-webhook-url.com/api/notify">
+                        <div class="form-text">通知将发送到此地址</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="webhookJson" class="form-label">请求体 JSON 模板</label>
+                        <textarea class="form-control" id="webhookJson" rows="6" 
+                                  placeholder='{"title": "{title}", "text": "{通知消息}"}'></textarea>
+                        <div class="form-text">
+                            支持的变量：<br>
+                            • <code>{title}</code> - 标题（固定为"订阅监控通知"）<br>
+                            • <code>{content}</code> 或 <code>{通知消息}</code> - 通知内容
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="expirationWarningDays" class="form-label">到期提醒天数</label>
+                        <input type="number" class="form-control" id="expirationWarningDays" 
+                               min="1" max="365" value="30">
+                        <div class="form-text">
+                            当订阅剩余天数少于或等于此天数时，将发送到期提醒通知（默认30天）
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>💡 通知触发条件：</strong>
+                        <ul class="mb-0">
+                            <li>订阅即将到期（剩余天数 ≤ 设置的提醒天数）</li>
+                            <li>订阅已失效</li>
+                            <li>Cookie 失效（认证失败）</li>
+                            <li>登录密码错误</li>
+                        </ul>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveWebhookConfig()">
+                        💾 保存配置
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="testWebhook()">
+                        🧪 测试通知
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 订阅管理部分 -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>📋 订阅管理</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+                ➕ 添加订阅
+            </button>
+        </div>
+
+        <div id="subscriptionsList" class="row">
+            <!-- 订阅列表将在这里动态生成 -->
+        </div>
+
+        <div id="emptyState" class="text-center py-5" style="display: none;">
+            <p class="text-muted">暂无订阅项，点击上方按钮添加</p>
+        </div>
+    </div>
+
+    <!-- 添加订阅模态框 -->
+    <div class="modal fade" id="addModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加订阅</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addForm">
+                        <div class="mb-3">
+                            <label for="addOrder" class="form-label">编号</label>
+                            <input type="number" class="form-control" id="addOrder" min="1" 
+                                   placeholder="留空自动分配">
+                            <div class="form-text">用于排序和快速查询</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addName" class="form-label">订阅名称</label>
+                            <input type="text" class="form-control" id="addName" required 
+                                   placeholder="例如: 公司 Office 365 订阅">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addCurlCommand" class="form-label">许可证查询 Curl 命令</label>
+                            <textarea class="form-control" id="addCurlCommand" rows="10" required
+                                      placeholder="粘贴完整的 curl 命令..."></textarea>
+                            <div class="form-text">从浏览器开发者工具复制许可证查询的 curl 命令</div>
+                        </div>
+                        <hr class="my-4">
+                        <h6 class="mb-3">用户创建配置（可选）</h6>
+                        <div class="mb-3">
+                            <label for="addUserCreateCurl" class="form-label">创建用户的 Curl 命令</label>
+                            <textarea class="form-control" id="addUserCreateCurl" rows="10" 
+                                      placeholder="粘贴创建用户的完整 curl 命令..."></textarea>
+                            <div class="form-text">
+                                从浏览器开发者工具复制创建用户请求的 curl 命令
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="addSubscription()">添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑订阅模态框 -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑订阅</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editId">
+                        <div class="mb-3">
+                            <label for="editOrder" class="form-label">编号</label>
+                            <input type="number" class="form-control" id="editOrder" min="1" required>
+                            <div class="form-text">用于排序和快速查询</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editName" class="form-label">订阅名称</label>
+                            <input type="text" class="form-control" id="editName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCurlCommand" class="form-label">许可证查询 Curl 命令</label>
+                            <textarea class="form-control" id="editCurlCommand" rows="10" required></textarea>
+                            <div class="form-text">从浏览器开发者工具复制许可证查询的 curl 命令</div>
+                        </div>
+                        <hr class="my-4">
+                        <h6 class="mb-3">用户创建配置（可选）</h6>
+                        <div class="mb-3">
+                            <label for="editUserCreateCurl" class="form-label">创建用户的 Curl 命令</label>
+                            <textarea class="form-control" id="editUserCreateCurl" rows="10" 
+                                      placeholder="粘贴创建用户的完整 curl 命令..."></textarea>
+                            <div class="form-text">
+                                从浏览器开发者工具复制创建用户请求的 curl 命令
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updateSubscription()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let addModal, editModal;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            addModal = new bootstrap.Modal(document.getElementById('addModal'));
+            editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            loadSubscriptions();
+            loadWebhookConfig();
+        });
+
+        // Webhook 配置相关
+        function loadWebhookConfig() {
+            fetch('/api/webhook-config')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        document.getElementById('webhookUrl').value = result.data.webhook_url || '';
+                        document.getElementById('webhookJson').value = result.data.webhook_json || '';
+                        document.getElementById('expirationWarningDays').value = result.data.expiration_warning_days || 30;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载 Webhook 配置失败:', error);
+                });
+        }
+
+        function saveWebhookConfig() {
+            const webhookUrl = document.getElementById('webhookUrl').value.trim();
+            const webhookJson = document.getElementById('webhookJson').value.trim();
+            const expirationWarningDays = parseInt(document.getElementById('expirationWarningDays').value) || 30;
+
+            // 验证天数
+            if (expirationWarningDays < 1 || expirationWarningDays > 365) {
+                alert('❌ 到期提醒天数必须在 1-365 之间');
+                return;
+            }
+
+            fetch('/api/webhook-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    webhook_url: webhookUrl,
+                    webhook_json: webhookJson,
+                    expiration_warning_days: expirationWarningDays
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('✅ Webhook 配置已保存！');
+                } else {
+                    alert('❌ 保存失败: ' + result.error);
+                }
+            })
+            .catch(error => {
+                alert('❌ 保存失败: ' + error.message);
+            });
+        }
+
+        function testWebhook() {
+            const webhookUrl = document.getElementById('webhookUrl').value.trim();
+            const webhookJson = document.getElementById('webhookJson').value.trim();
+            const expirationWarningDays = parseInt(document.getElementById('expirationWarningDays').value) || 30;
+
+            if (!webhookUrl) {
+                alert('请先填写 Webhook 地址');
+                return;
+            }
+
+            // 先保存配置
+            fetch('/api/webhook-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    webhook_url: webhookUrl,
+                    webhook_json: webhookJson,
+                    expiration_warning_days: expirationWarningDays
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // 发送测试通知
+                    return fetch('/api/webhook-test', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } else {
+                    throw new Error(result.error || '保存配置失败');
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('✅ 测试通知已发送！\n\n请检查您的通知接收端是否收到消息。');
+                } else {
+                    alert('❌ 测试失败: ' + result.error);
+                }
+            })
+            .catch(error => {
+                alert('❌ 测试失败: ' + error.message);
+            });
+        }
+
+        // 订阅管理相关
+        function loadSubscriptions() {
+            fetch('/api/subscriptions')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        displaySubscriptions(result.data);
+                    }
+                })
+                .catch(error => {
+                    console.error('加载订阅失败:', error);
+                });
+        }
+
+        function displaySubscriptions(subscriptions) {
+            const container = document.getElementById('subscriptionsList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (subscriptions.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            container.innerHTML = subscriptions.map(sub => createSubscriptionItem(sub)).join('');
+        }
+
+        function createSubscriptionItem(sub) {
+            const data = sub.subscription_data || {};
+            const status = sub.status || 'unknown';
+            const order = sub.order || 0;
+            
+            let statusBadge = '<span class="badge bg-secondary">未知</span>';
+            if (status === 'active') {
+                statusBadge = '<span class="badge bg-success">活跃</span>';
+            } else if (status === 'expired') {
+                statusBadge = '<span class="badge bg-danger">失效</span>';
+            } else if (status === 'error') {
+                statusBadge = '<span class="badge bg-warning">错误</span>';
+            }
+
+            return `
+                <div class="col-12 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="badge bg-primary me-2" style="font-size: 1rem; padding: 0.5rem 0.75rem;">
+                                            #${order}
+                                        </span>
+                                        <h5 class="card-title mb-0">${sub.name}</h5>
+                                        <span class="ms-2">${statusBadge}</span>
+                                    </div>
+                                    <p class="text-muted mb-1 small">订阅 ID: ${sub.subscription_id || '未知'}</p>
+                                    <p class="text-muted mb-0 small">类型: ${data.name || data.skuPartNumber || '未知'}</p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary me-2" onclick="editSubscriptionModal('${sub.id}')">
+                                        ✏️ 编辑
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSubscription('${sub.id}')">
+                                        🗑️ 删除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addSubscription() {
+            const name = document.getElementById('addName').value;
+            const curlCommand = document.getElementById('addCurlCommand').value;
+            const order = document.getElementById('addOrder').value;
+            const userCreateCurl = document.getElementById('addUserCreateCurl').value;
+
+            if (!name || !curlCommand) {
+                alert('请填写所有必填项');
+                return;
+            }
+
+            const payload = {
+                name: name,
+                curl_command: curlCommand
+            };
+
+            if (order) {
+                payload.order = parseInt(order);
+            }
+
+            if (userCreateCurl) {
+                payload.user_create_curl = userCreateCurl;
+            }
+
+            fetch('/api/subscriptions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('添加成功！');
+                    addModal.hide();
+                    document.getElementById('addForm').reset();
+                    loadSubscriptions();
+                } else {
+                    alert('添加失败: ' + result.error);
+                }
+            })
+            .catch(error => {
+                alert('添加失败: ' + error.message);
+            });
+        }
+
+        function editSubscriptionModal(subId) {
+            fetch('/api/subscriptions')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        const sub = result.data.find(s => s.id === subId);
+                        if (sub) {
+                            document.getElementById('editId').value = sub.id;
+                            document.getElementById('editOrder').value = sub.order || 1;
+                            document.getElementById('editName').value = sub.name;
+                            const curlCommand = `curl '${sub.api_url}' -H 'accept: application/json' -b '${sub.cookies}'`;
+                            document.getElementById('editCurlCommand').value = curlCommand;
+                            document.getElementById('editUserCreateCurl').value = sub.user_create_curl || '';
+                            editModal.show();
+                        }
+                    }
+                });
+        }
+
+        function updateSubscription() {
+            const id = document.getElementById('editId').value;
+            const order = document.getElementById('editOrder').value;
+            const name = document.getElementById('editName').value;
+            const curlCommand = document.getElementById('editCurlCommand').value;
+            const userCreateCurl = document.getElementById('editUserCreateCurl').value;
+
+            if (!name || !curlCommand || !order) {
+                alert('请填写所有必填项');
+                return;
+            }
+
+            const payload = {
+                order: parseInt(order),
+                name: name,
+                curl_command: curlCommand
+            };
+
+            if (userCreateCurl) {
+                payload.user_create_curl = userCreateCurl;
+            }
+
+            fetch(`/api/subscriptions/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('更新成功！');
+                    editModal.hide();
+                    loadSubscriptions();
+                } else {
+                    alert('更新失败: ' + result.error);
+                }
+            })
+            .catch(error => {
+                alert('更新失败: ' + error.message);
+            });
+        }
+
+        function deleteSubscription(subId) {
+            if (!confirm('确定要删除这个订阅吗？')) {
+                return;
+            }
+
+            fetch(`/api/subscriptions/${subId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('删除成功！');
+                    loadSubscriptions();
+                } else {
+                    alert('删除失败: ' + result.error);
+                }
+            })
+            .catch(error => {
+                alert('删除失败: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>
