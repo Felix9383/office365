@@ -487,4 +487,4 @@ def update_check_interval():
 if __name__ == '__main__':
     print("Office 365 订阅监控系统启动中...")
     print("访问地址: http://localhost:5000")
-    app.run(host='0.0.0.0', port=5005, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
