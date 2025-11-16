@@ -26,42 +26,56 @@ class ConfigManager:
         }
         
         try:
+            needs_save = False
+            config = None
+            
+            # 读取和解析配置
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
                 
                 # 检查文件是否为空
                 if not content:
                     print(f"⚠️  配置文件为空，创建默认配置")
-                    self.save_config(default_config)
-                    return default_config
-                
-                # 尝试解析 JSON
-                config = json.loads(content)
-                
-                # 验证配置结构，确保必要的字段存在
-                if 'subscriptions' not in config:
-                    config['subscriptions'] = []
-                
-                if 'notification' not in config:
-                    config['notification'] = default_config['notification']
+                    # 文件句柄已关闭，可以安全保存
+                    config = default_config
+                    needs_save = True
                 else:
-                    # 确保 notification 中有所有必要字段
-                    if 'webhook_url' not in config['notification']:
-                        config['notification']['webhook_url'] = ""
-                    if 'webhook_json' not in config['notification']:
-                        config['notification']['webhook_json'] = ""
-                    if 'expiration_warning_days' not in config['notification']:
-                        config['notification']['expiration_warning_days'] = 30
-                
-                if 'login_password' not in config:
-                    config['login_password'] = "xiaokun567"
-                
-                if 'check_interval_hours' not in config:
-                    config['check_interval_hours'] = 12
-                
-                # 保存修复后的配置
+                    # 尝试解析 JSON
+                    config = json.loads(content)
+                    
+                    # 验证配置结构，确保必要的字段存在
+                    if 'subscriptions' not in config:
+                        config['subscriptions'] = []
+                        needs_save = True
+                    
+                    if 'notification' not in config:
+                        config['notification'] = default_config['notification']
+                        needs_save = True
+                    else:
+                        # 确保 notification 中有所有必要字段
+                        if 'webhook_url' not in config['notification']:
+                            config['notification']['webhook_url'] = ""
+                            needs_save = True
+                        if 'webhook_json' not in config['notification']:
+                            config['notification']['webhook_json'] = ""
+                            needs_save = True
+                        if 'expiration_warning_days' not in config['notification']:
+                            config['notification']['expiration_warning_days'] = 30
+                            needs_save = True
+                    
+                    if 'login_password' not in config:
+                        config['login_password'] = "xiaokun567"
+                        needs_save = True
+                    
+                    if 'check_interval_hours' not in config:
+                        config['check_interval_hours'] = 12
+                        needs_save = True
+            
+            # ✅ with 块已结束，文件句柄已关闭，现在可以安全保存
+            if needs_save:
                 self.save_config(config)
-                return config
+            
+            return config
                 
         except FileNotFoundError:
             # 如果文件不存在，创建默认配置
@@ -99,9 +113,14 @@ class ConfigManager:
         if config is None:
             config = self.config
         
+        import os
+        import shutil
+        import time
+        
+        temp_path = f"{self.config_path}.tmp"
+        
         try:
             # 先写入临时文件
-            temp_path = f"{self.config_path}.tmp"
             with open(temp_path, 'w', encoding='utf-8') as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
             
@@ -110,25 +129,46 @@ class ConfigManager:
                 json.load(f)  # 尝试读取验证
             
             # 如果验证成功，替换原文件
-            import os
             if os.path.exists(self.config_path):
                 # 备份当前配置
                 backup_path = f"{self.config_path}.bak"
-                import shutil
-                shutil.copy(self.config_path, backup_path)
+                try:
+                    shutil.copy(self.config_path, backup_path)
+                except Exception as backup_error:
+                    print(f"⚠️  备份配置失败: {backup_error}")
             
-            # 替换为新配置
-            os.replace(temp_path, self.config_path)
+            # 替换为新配置（添加重试机制，解决 Windows 文件锁定问题）
+            max_retries = 5
+            retry_delay = 0.1
+            
+            for attempt in range(max_retries):
+                try:
+                    # 在 Windows 上，如果文件被占用，os.replace 会失败
+                    os.replace(temp_path, self.config_path)
+                    break  # 成功则退出循环
+                except PermissionError as perm_error:
+                    if attempt < max_retries - 1:
+                        # 等待文件句柄释放
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # 指数退避
+                    else:
+                        # 最后一次尝试失败，抛出异常
+                        raise PermissionError(
+                            f"无法保存配置文件，文件可能被其他程序占用。"
+                            f"已重试 {max_retries} 次。原始错误: {perm_error}"
+                        )
+                except Exception as replace_error:
+                    # 其他错误直接抛出
+                    raise replace_error
             
         except Exception as e:
             print(f"❌ 保存配置文件失败: {e}")
             # 清理临时文件
             try:
-                import os
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
-            except:
-                pass
+            except Exception as cleanup_error:
+                print(f"⚠️  清理临时文件失败: {cleanup_error}")
             raise
     
     def parse_curl_command(self, curl_command: str) -> Dict:
