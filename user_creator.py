@@ -139,22 +139,32 @@ class UserCreator:
             # 从用户创建配置的原始 curl 命令中提取请求体
             user_create_curl = subscription.get('user_create_curl', '')
             
+            if not user_create_curl or user_create_curl.strip() == '':
+                print(f"[创建用户] 错误: 未配置用户创建 curl 命令")
+                return {
+                    'success': False,
+                    'error': '该订阅未配置用户创建 curl 命令，请在设置中添加完整的用户创建 curl 命令（包含 --data-raw 参数）'
+                }
+            
             # 提取 --data-raw 后的 JSON 数据
             import re
             
+            print(f"[创建用户] curl 命令长度: {len(user_create_curl)}")
+            print(f"[创建用户] curl 命令前100字符: {user_create_curl[:100]}")
+            
             # 尝试多种模式匹配
-            data_match = re.search(r'--data-raw\s+\$?\'(.+?)\'(?:\s|$)', user_create_curl, re.DOTALL)
+            data_match = re.search(r'--data-raw\s+\$?\'(.+?)\'(?:\s+-|$)', user_create_curl, re.DOTALL)
             if not data_match:
-                data_match = re.search(r'--data-raw\s+\$?"(.+?)"(?:\s|$)', user_create_curl, re.DOTALL)
+                data_match = re.search(r'--data-raw\s+\$?"(.+?)"(?:\s+-|$)', user_create_curl, re.DOTALL)
             if not data_match:
-                data_match = re.search(r'--data-raw\s+(.+?)(?:\s+-H|\s+$)', user_create_curl, re.DOTALL)
+                data_match = re.search(r'--data-raw\s+(.+?)(?:\s+-H|\s+--|\s+$)', user_create_curl, re.DOTALL)
             
             if not data_match:
                 print(f"[创建用户] 错误: 无法从 curl 命令中提取请求体")
-                print(f"[创建用户] curl 命令长度: {len(user_create_curl)}")
+                print(f"[创建用户] 提示: 请确保 curl 命令包含 --data-raw 参数")
                 return {
                     'success': False,
-                    'error': '无法从用户创建配置中提取请求体数据'
+                    'error': '无法从用户创建 curl 命令中提取请求体数据，请确保 curl 命令包含 --data-raw 参数'
                 }
             
             # 解析原始请求体

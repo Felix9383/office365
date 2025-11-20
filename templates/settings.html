@@ -126,12 +126,25 @@
                         </div>
                         <div class="mb-3">
                             <label for="addCurlCommand" class="form-label">许可证查询 Curl 命令</label>
-                            <textarea class="form-control" id="addCurlCommand" rows="10" required
+                            <textarea class="form-control" id="addCurlCommand" rows="8" required
                                       placeholder="粘贴完整的 curl 命令..."></textarea>
                             <div class="form-text">从浏览器开发者工具复制许可证查询的 curl 命令</div>
                         </div>
-                        <div class="alert alert-info mt-3">
-                            <strong>💡 提示：</strong>系统会自动从许可证 Cookie 生成用户创建配置，无需手动配置！
+                        <div class="mb-3">
+                            <label for="addUserCreateCurl" class="form-label">用户创建 Curl 命令（可选）</label>
+                            <textarea class="form-control" id="addUserCreateCurl" rows="8"
+                                      placeholder="粘贴创建用户的完整 curl 命令（包含 --data-raw 参数）..."></textarea>
+                            <div class="form-text">
+                                <strong>⚠️ 重要：</strong>必须包含 <code>--data-raw</code> 参数和完整的请求体数据，否则创建用户功能将无法使用
+                            </div>
+                        </div>
+                        <div class="alert alert-warning mt-3">
+                            <strong>💡 提示：</strong>
+                            <ul class="mb-0">
+                                <li>如果不填写用户创建 Curl 命令，该订阅将无法使用创建用户功能</li>
+                                <li>用户创建 Curl 命令必须包含 <code>--data-raw</code> 参数</li>
+                                <li>系统会从 Curl 命令中提取请求体模板，用于创建新用户</li>
+                            </ul>
                         </div>
                     </form>
                 </div>
@@ -165,11 +178,24 @@
                         </div>
                         <div class="mb-3">
                             <label for="editCurlCommand" class="form-label">许可证查询 Curl 命令</label>
-                            <textarea class="form-control" id="editCurlCommand" rows="10" required></textarea>
+                            <textarea class="form-control" id="editCurlCommand" rows="8" required></textarea>
                             <div class="form-text">从浏览器开发者工具复制许可证查询的 curl 命令</div>
                         </div>
-                        <div class="alert alert-info mt-3">
-                            <strong>💡 提示：</strong>更新许可证 Cookie 后，系统会自动同步更新用户创建配置！
+                        <div class="mb-3">
+                            <label for="editUserCreateCurl" class="form-label">用户创建 Curl 命令（可选）</label>
+                            <textarea class="form-control" id="editUserCreateCurl" rows="8"
+                                      placeholder="粘贴创建用户的完整 curl 命令（包含 --data-raw 参数）..."></textarea>
+                            <div class="form-text">
+                                <strong>⚠️ 重要：</strong>必须包含 <code>--data-raw</code> 参数和完整的请求体数据，否则创建用户功能将无法使用
+                            </div>
+                        </div>
+                        <div class="alert alert-warning mt-3">
+                            <strong>💡 提示：</strong>
+                            <ul class="mb-0">
+                                <li>如果不填写用户创建 Curl 命令，该订阅将无法使用创建用户功能</li>
+                                <li>用户创建 Curl 命令必须包含 <code>--data-raw</code> 参数</li>
+                                <li>更新后，系统会重新解析请求体模板</li>
+                            </ul>
                         </div>
                     </form>
                 </div>
@@ -405,6 +431,7 @@
         function addSubscription() {
             const name = document.getElementById('addName').value;
             const curlCommand = document.getElementById('addCurlCommand').value;
+            const userCreateCurl = document.getElementById('addUserCreateCurl').value;
             const order = document.getElementById('addOrder').value;
 
             if (!name || !curlCommand) {
@@ -419,6 +446,11 @@
 
             if (order) {
                 payload.order = parseInt(order);
+            }
+
+            // 如果填写了用户创建 Curl 命令，添加到 payload
+            if (userCreateCurl && userCreateCurl.trim()) {
+                payload.user_create_curl = userCreateCurl.trim();
             }
 
             fetch('/api/subscriptions', {
@@ -456,6 +488,11 @@
                             document.getElementById('editName').value = sub.name;
                             const curlCommand = `curl '${sub.api_url}' -H 'accept: application/json' -b '${sub.cookies}'`;
                             document.getElementById('editCurlCommand').value = curlCommand;
+                            
+                            // 填充用户创建 Curl 命令（如果存在）
+                            const userCreateCurl = sub.user_create_curl || '';
+                            document.getElementById('editUserCreateCurl').value = userCreateCurl;
+                            
                             editModal.show();
                         }
                     }
@@ -467,6 +504,7 @@
             const order = document.getElementById('editOrder').value;
             const name = document.getElementById('editName').value;
             const curlCommand = document.getElementById('editCurlCommand').value;
+            const userCreateCurl = document.getElementById('editUserCreateCurl').value;
 
             if (!name || !curlCommand || !order) {
                 alert('请填写所有必填项');
@@ -478,6 +516,11 @@
                 name: name,
                 curl_command: curlCommand
             };
+
+            // 如果填写了用户创建 Curl 命令，添加到 payload
+            if (userCreateCurl && userCreateCurl.trim()) {
+                payload.user_create_curl = userCreateCurl.trim();
+            }
 
             fetch(`/api/subscriptions/${id}`, {
                 method: 'PUT',
